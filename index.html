@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>가위바위보 룰렛</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: #eef3fb;
+      color: #182641;
+      font: 1.25rem/1.4 system-ui, sans-serif;
+    }
+
+    main { width: min(100%, 35rem); text-align: center; }
+    h1 { margin: 0; font-size: clamp(1.75rem, 6vw, 2.75rem); }
+
+    #result {
+      margin: 8px 0 14px;
+      font-size: clamp(2.5rem, 10vw, 4.25rem);
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .roulette {
+      position: relative;
+      width: min(100%, 25rem);
+      margin: 0 auto 24px;
+      padding-top: 14px;
+    }
+
+    .pointer {
+      position: absolute;
+      z-index: 1;
+      top: 0;
+      left: 50%;
+      width: 36px;
+      height: 38px;
+      transform: translateX(-50%);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+      background: #182641;
+    }
+
+    #wheel {
+      position: relative;
+      aspect-ratio: 1;
+      border: 6px solid #182641;
+      border-radius: 50%;
+      background: conic-gradient(from -60deg,
+        #9d2b40 0deg 120deg, #245396 120deg 240deg, #20664d 240deg 360deg);
+      transition: transform 3.5s cubic-bezier(.12, .72, .16, 1);
+    }
+
+    .choice {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: clamp(1.75rem, 7vw, 3rem);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .hand {
+      display: block;
+      margin-top: 2px;
+      font-size: 1em;
+      line-height: 1;
+    }
+
+    .scissors { left: 50%; top: 18%; }
+    .rock { left: 78%; top: 66%; }
+    .paper { left: 22%; top: 66%; }
+
+    .buttons { display: grid; gap: 12px; }
+
+    button {
+      min-height: 72px;
+      padding: 12px 16px;
+      border: 3px solid #182641;
+      border-radius: 16px;
+      background: #182641;
+      color: white;
+      font: inherit;
+      font-size: clamp(1.65rem, 6vw, 2rem);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    #again { background: white; color: #182641; }
+    button[aria-disabled="true"] { opacity: .6; cursor: default; }
+    button:focus-visible { outline: 4px solid #a52d43; outline-offset: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>가위바위보 룰렛</h1>
+    <p id="result" role="status" aria-atomic="true">준비!</p>
+
+    <div class="roulette" aria-hidden="true">
+      <div class="pointer"></div>
+      <div id="wheel">
+        <span class="choice scissors">가위<span class="hand">✌️</span></span>
+        <span class="choice rock">바위<span class="hand">✊</span></span>
+        <span class="choice paper">보<span class="hand">🖐️</span></span>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button id="spin" type="button">돌리기</button>
+      <button id="again" type="button" aria-disabled="true">다시 돌리기</button>
+    </div>
+  </main>
+
+  <script>
+    const wheel = document.querySelector("#wheel");
+    const result = document.querySelector("#result");
+    const spinButton = document.querySelector("#spin");
+    const againButton = document.querySelector("#again");
+    const choices = ["가위", "바위", "보"];
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let rotation = 0;
+
+    function spin(event) {
+      if (event.currentTarget.getAttribute("aria-disabled") === "true") return;
+
+      spinButton.setAttribute("aria-disabled", "true");
+      againButton.setAttribute("aria-disabled", "true");
+
+      const selected = Math.floor(Math.random() * choices.length);
+      // 선택한 칸의 중앙을 위쪽 화살표에 맞춥니다.
+      const targetAngle = (360 - selected * 120) % 360;
+      const extraAngle = (targetAngle - rotation % 360 + 360) % 360;
+      rotation += 5 * 360 + extraAngle;
+
+      function finish() {
+        result.textContent = choices[selected] + "!";
+        spinButton.removeAttribute("aria-disabled");
+        againButton.removeAttribute("aria-disabled");
+      }
+
+      const skipAnimation = reducedMotion.matches;
+      wheel.style.transitionDuration = skipAnimation ? "0s" : "";
+      if (skipAnimation) {
+        wheel.style.transform = "rotate(" + rotation + "deg)";
+        finish();
+        return;
+      }
+
+      result.textContent = "돌아가는 중…";
+      wheel.addEventListener("transitionend", finish, { once: true });
+      wheel.style.transform = "rotate(" + rotation + "deg)";
+    }
+
+    spinButton.addEventListener("click", spin);
+    againButton.addEventListener("click", spin);
+  </script>
+</body>
+</html>
